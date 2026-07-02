@@ -1,263 +1,269 @@
-# ⚔️ D&D Campaign Hub — Frontend
+# D&D Campaign Hub — Frontend
 
-Single Page Application para gestión de campañas de D&D 5e.  
-Construida con React 18 + Vite. Consume la API REST del backend.
-
----
-
-## 🛠️ Tecnologías
-
-| Paquete | Versión | Para qué sirve |
-|---------|---------|----------------|
-| **react** | ^18.2 | Librería de UI con hooks y componentes funcionales |
-| **react-dom** | ^18.2 | Renderizado en el DOM |
-| **vite** | ^5.0 | Dev server ultrarrápido y bundler de producción |
-| **@vitejs/plugin-react** | ^4.2 | Soporte JSX y Fast Refresh en Vite |
-
-> No se usan librerías de routing externas. La navegación entre páginas se maneja con estado de React puro (`useState`), cumpliendo el requisito de SPA sin dependencias de backend.
+Single-page application for managing Dungeons & Dragons 5e campaigns.
+Built with React 18 and Vite. Consumes the backend REST API.
 
 ---
 
-## 📁 Estructura de carpetas
+## Technologies
+
+| Package | Version | Purpose |
+|---------|---------|---------|
+| react | ^18.2 | UI library with hooks and functional components |
+| react-dom | ^18.2 | DOM rendering |
+| vite | ^5.0 | Development server and production bundler |
+| @vitejs/plugin-react | ^4.2 | JSX support and Fast Refresh in Vite |
+
+No external routing library is used. Navigation between pages is handled with plain React state (`useState`), keeping the app a dependency-free SPA on the client side.
+
+---
+
+## Folder structure
 
 ```
 frontend/
-├── index.html                     ← Entry point HTML (Vite lo inyecta)
-├── vite.config.js                 ← Configuración de Vite (puerto 5173)
+├── index.html                     Entry point HTML (injected by Vite)
+├── vite.config.js                 Vite configuration (port 5173)
 ├── package.json
 └── src/
-    ├── main.jsx                   ← Monta <App /> en el DOM
-    ├── App.jsx                    ← Router principal + Navbar + layout
-    ├── App.css                    ← Estilos globales (tema oscuro dorado D&D)
+    ├── main.jsx                   Mounts <App /> in the DOM
+    ├── App.jsx                    Main router, navbar, and layout
+    ├── App.css                    Global styles (dark gold D&D theme)
     │
     ├── context/
-    │   └── AuthContext.jsx        ← Estado global: usuario, login, logout
+    │   └── AuthContext.jsx        Global state: user, login, logout
     │
     ├── services/
-    │   └── api.js                 ← Todas las llamadas fetch a la API
+    │   └── api.js                 All fetch calls to the API
     │
     ├── pages/
-    │   ├── LoginPage.jsx          ← Login + registro con tabs
-    │   ├── DashboardPage.jsx      ← Grilla de campañas del usuario
-    │   ├── CampaignPage.jsx       ← Detalle de campaña con 3 tabs
-    │   └── UsersPage.jsx          ← Gestión de usuarios (solo DM)
+    │   ├── LoginPage.jsx          Login and registration tabs
+    │   ├── DashboardPage.jsx      Grid of the user's campaigns
+    │   ├── CampaignPage.jsx       Campaign detail with three tabs
+    │   └── UsersPage.jsx          User management (DM only)
     │
     └── components/
-        ├── MissionsTab.jsx        ← CRUD de misiones + asignación a jugadores
-        ├── EncountersTab.jsx      ← Constructor de encuentros + combat tracker
-        └── PlayersTab.jsx         ← Jugadores de la campaña
+        ├── MissionsTab.jsx        Mission CRUD and player assignment
+        ├── EncountersTab.jsx      Encounter builder and combat tracker
+        ├── PlayersTab.jsx         Campaign player list
+        ├── MonsterSearch.jsx      Monster catalog search with filters
+        └── MonsterDetailModal.jsx Full monster stat block
 ```
 
 ---
 
-## 🚀 Instalación y arranque
+## Installation and setup
 
-### Requisitos previos
-- Node.js >= 18
-- npm >= 8
-- El backend corriendo en `http://localhost:3001`
+### Requirements
 
-### Pasos
+- Node.js 18 or higher
+- npm 8 or higher
+- Backend running at `http://localhost:3001`
+
+### Steps
 
 ```bash
-# 1. Entrar a la carpeta
+# 1. Move into the folder
 cd frontend
 
-# 2. Instalar dependencias
+# 2. Install dependencies
 npm install
 
-# 3. Iniciar en modo desarrollo
+# 3. Start the development server
 npm run dev
 ```
 
-Salida esperada:
+Expected output:
+
 ```
   VITE v5.x  ready in xxx ms
 
-  ➜  Local:   http://localhost:5173/
+  Local:   http://localhost:5173/
 ```
 
-Abrir **http://localhost:5173** en el navegador.
+Open `http://localhost:5173` in the browser.
 
-### Build de producción (opcional)
+### Production build (optional)
 
 ```bash
 npm run build
-# Genera la carpeta dist/ con los archivos compilados
+# Generates the dist/ folder with the compiled assets
 ```
 
 ---
 
-## 🧩 Componentes y páginas
+## Components and pages
 
-### `AuthContext.jsx`
-Contexto global que provee a toda la app el estado del usuario autenticado.
+### AuthContext.jsx
 
-- Persiste el JWT en `localStorage` bajo la clave `dnd_token`.
-- Al iniciar la app, intenta recuperar la sesión llamando a `GET /api/auth/me`.
-- Expone: `user`, `loading`, `login(email, pass)`, `register(...)`, `logout()`.
+Global context that provides the authenticated user's state to the entire app.
+
+- Persists the JWT in `localStorage` under the key `dnd_token`.
+- On startup, attempts to restore the session by calling `GET /api/auth/me`.
+- Exposes `user`, `loading`, `login(email, password)`, `register(...)`, and `logout()`.
 
 ---
 
-### `api.js` — Capa de servicio
+### api.js — Service layer
 
-Centraliza **todas** las llamadas HTTP al backend. Cada función:
-1. Lee el token de `localStorage`.
-2. Agrega el header `Authorization: Bearer <token>`.
-3. Hace el `fetch` y lanza un `Error` si la respuesta no es ok.
+Centralizes all HTTP calls to the backend. Each function:
+
+1. Reads the token from `localStorage`.
+2. Adds the `Authorization: Bearer <token>` header.
+3. Performs the `fetch` call and throws an `Error` if the response is not ok.
 
 ```js
-// Ejemplo de uso desde cualquier componente:
+// Example usage from any component:
 const campaigns = await api.getCampaigns();
 await api.createMission({ campaignId, title, reward, difficulty });
 ```
 
-Funciones disponibles:
+Available functions:
 
-| Grupo | Funciones |
+| Group | Functions |
 |-------|-----------|
 | Auth | `login`, `register`, `me` |
-| Campañas | `getCampaigns`, `getCampaign`, `createCampaign`, `updateCampaign`, `deleteCampaign`, `addPlayer`, `removePlayer` |
-| Misiones | `getMissions`, `createMission`, `updateMission`, `deleteMission`, `assignMission`, `completeMission` |
-| Encuentros | `getEncounters`, `getEncounter`, `createEncounter`, `startEncounter`, `applyDamage`, `nextRound`, `endEncounter`, `deleteEncounter` |
-| Monstruos | `getMonsters`, `createMonster`, `deleteMonster` |
-| Usuarios | `getUsers`, `getPlayers`, `deleteUser` |
+| Campaigns | `getCampaigns`, `getCampaign`, `createCampaign`, `updateCampaign`, `deleteCampaign`, `addPlayer`, `removePlayer` |
+| Missions | `getMissions`, `createMission`, `updateMission`, `deleteMission`, `assignMission`, `completeMission` |
+| Encounters | `getEncounters`, `getEncounter`, `createEncounter`, `startEncounter`, `applyDamage`, `nextRound`, `endEncounter`, `deleteEncounter` |
+| Monsters | `getMonsters`, `searchMonsters`, `getMonsterDetail`, `createMonster`, `deleteMonster` |
+| Users | `getUsers`, `getPlayers`, `deleteUser` |
 
 ---
 
-### `App.jsx` — Router y layout
+### App.jsx — Router and layout
 
-Maneja la navegación con una función `navigate(page, extraData)` pasada como prop. Las páginas posibles son `'dashboard'`, `'campaign'` y `'users'`.
+Handles navigation with a `navigate(page, extraData)` function passed as a prop. The available pages are `dashboard`, `campaign`, and `users`.
 
-La **Navbar** se muestra solo cuando hay usuario autenticado. Incluye:
-- Nombre y avatar del usuario.
-- Badge de rol (DM en violeta, Player en dorado).
-- Botón "Salir" que llama a `logout()` del contexto.
-- Enlace a Usuarios visible solo para el rol `dm`.
+The navbar is shown only when a user is authenticated. It includes:
 
----
-
-### `LoginPage.jsx`
-
-Dos modos en tabs: **Ingresar** y **Registrarse**.
-
-- El formulario de registro agrega campos de nombre de usuario y selector de rol.
-- Botones de acceso rápido "DM Demo" y "Player Demo" para demostración.
-- Muestra errores recibidos de la API (credenciales incorrectas, email ya registrado, etc.).
-- Fondo animado con partículas flotantes (íconos de D&D).
+- User name and avatar.
+- Role badge (DM in purple, Player in gold).
+- Logout button, which calls `logout()` from the context.
+- Link to Users, visible only for the `dm` role.
 
 ---
 
-### `DashboardPage.jsx`
+### LoginPage.jsx
 
-Vista principal después del login. Muestra todas las campañas del usuario como tarjetas.
+Two modes in tabs: Sign in and Register.
 
-- **DM:** ve sus propias campañas, puede crear nuevas y eliminarlas.
-- **Player:** ve solo las campañas a las que pertenece.
-
-Cada tarjeta muestra: nombre, descripción, ícono, estado, cantidad de jugadores y misiones.
-
-El modal de creación permite elegir nombre, descripción e ícono (emoji).
+- The registration form adds username and role fields.
+- Quick-access "DM Demo" and "Player Demo" buttons for demonstration purposes.
+- Displays errors returned by the API (invalid credentials, email already registered, and so on).
+- Animated background with floating D&D-themed icons.
 
 ---
 
-### `CampaignPage.jsx`
+### DashboardPage.jsx
 
-Detalle de una campaña específica. Contiene tres tabs:
+Main view after login. Shows all of the user's campaigns as cards.
 
-| Tab | Componente | Descripción |
-|-----|-----------|-------------|
-| 📜 Misiones | `MissionsTab` | Listado y gestión de misiones |
-| ⚔️ Encuentros | `EncountersTab` | Constructor de combate y tracker en vivo |
-| 👥 Jugadores | `PlayersTab` | Miembros de la campaña |
+- DM: sees their own campaigns, can create and delete them.
+- Player: sees only the campaigns they belong to.
 
----
+Each card shows name, description, icon, status, player count, and mission count.
 
-### `MissionsTab.jsx`
-
-- Lista todas las misiones de la campaña con badge de estado y dificultad.
-- **DM:** puede crear, asignar a jugadores, marcar como completadas y eliminar.
-- **Player:** solo ve las misiones disponibles o las que le fueron asignadas.
-- El formulario de creación incluye título, descripción, recompensa y dificultad.
-- La asignación se hace con un `<select>` que lista los jugadores de la campaña.
-
-**Colores de estado:**
-- Disponible → azul
-- En Curso → dorado
-- Completada → verde
-
-**Colores de dificultad:**
-- Fácil → verde / Moderado → dorado / Difícil → rojo / Mortal → violeta
+The creation modal lets the DM choose a name, description, and icon (emoji).
 
 ---
 
-### `EncountersTab.jsx`
+### CampaignPage.jsx
 
-El componente más complejo de la app. Tiene dos modos:
+Detail view for a specific campaign, with three tabs:
 
-**Modo constructor (antes del combate):**
-- Formulario para crear un encuentro con nombre y descripción.
-- Selector de monstruos del catálogo con cantidad configurable.
-- Botón "Iniciar Combate" que llama a `POST /encounters/:id/start`.
-
-**Modo combat tracker (durante el combate):**
-- La API tira automáticamente iniciativa (d20) para cada instancia de monstruo.
-- Se muestra la lista ordenada por iniciativa con:
-  - Posición, resultado de iniciativa, nombre, CA.
-  - Barra de HP que cambia de verde → dorado → rojo según el porcentaje.
-  - Input numérico para aplicar daño + botón "💀 Aplicar" (DM únicamente).
-  - Label "💀 Caído" cuando el HP llega a 0.
-- Botones de "Siguiente Ronda" y "Terminar Combate".
+| Tab | Component | Description |
+|-----|-----------|--------------|
+| Missions | MissionsTab | Mission list and management |
+| Encounters | EncountersTab | Combat builder and live tracker |
+| Players | PlayersTab | Campaign members |
 
 ---
 
-### `PlayersTab.jsx`
+### MissionsTab.jsx
 
-- Lista los jugadores actuales de la campaña con avatar, nombre y email.
-- **DM:** puede remover jugadores existentes y agregar nuevos desde una lista de jugadores registrados que aún no están en la campaña.
+- Lists all missions in the campaign with status and difficulty badges.
+- DM: can create missions, assign them to players, mark them completed, and delete them.
+- Player: sees only available missions or missions assigned to them.
+- The creation form includes title, description, reward, and difficulty.
+- Assignment uses a `<select>` listing the campaign's players.
 
----
+Status colors: Available (blue), In progress (gold), Completed (green).
 
-### `UsersPage.jsx`
-
-Solo accesible para el rol `dm`. Muestra todos los usuarios del sistema separados en dos secciones: Dungeon Masters y Jugadores. El DM puede eliminar cualquier usuario (excepto a sí mismo, validación en el backend).
-
----
-
-## 🎨 Diseño y estilos
-
-El diseño replica la estética de la app Android D&D Companion:
-
-| Elemento | Valor |
-|----------|-------|
-| Fondo | `#0D0D14` (negro azulado) |
-| Secciones | `#16161F` |
-| Acento dorado | `#C9A84C` |
-| Dorado claro | `#E8C97A` |
-| Texto principal | `#E8E0D0` |
-| Texto secundario | `#8A8070` |
-| Fuente | system-ui / serif para títulos |
-
-No se usa ningún framework de CSS. Todo está en `App.css` con variables CSS nativas.
+Difficulty colors: Easy (green), Medium (gold), Hard (red), Deadly (purple).
 
 ---
 
-## 🔒 Seguridad en el frontend
+### EncountersTab.jsx
 
-- El token JWT se guarda en `localStorage` y se elimina al hacer logout.
-- Si el token expiró o es inválido, `AuthContext` lo detecta al iniciar y limpia el estado.
-- Las rutas de DM (botón "Usuarios" en la navbar, acciones de crear/editar/eliminar) no se renderizan si `user.role !== 'dm'`.
-- La segunda línea de defensa siempre está en el backend (el frontend nunca es suficiente).
+The most complex component in the app. It has two modes:
+
+Builder mode (before combat):
+
+- Form to create an encounter with a name and description.
+- Monster search with a configurable quantity per monster.
+- "Start Combat" button, which calls `POST /encounters/:id/start`.
+
+Combat tracker mode (during combat):
+
+- The API automatically rolls initiative (d20) for each monster instance.
+- Displays the ordered initiative list with position, initiative roll, name, and AC.
+- An HP bar that changes from green to gold to red based on remaining percentage.
+- A numeric input to apply damage plus an "Apply" button (DM only).
+- A "Down" label once HP reaches zero.
+- "Next Round" and "End Combat" controls.
 
 ---
 
-## 💡 Cuentas de demo
+### PlayersTab.jsx
 
-| Rol | Email | Contraseña |
-|-----|-------|-----------|
+- Lists the campaign's current players with avatar, name, and email.
+- DM: can remove existing players and add new ones from a list of registered players not yet in the campaign.
+
+---
+
+### UsersPage.jsx
+
+Accessible only to the `dm` role. Shows all system users split into Dungeon Masters and Players. The DM can delete any user except themselves (enforced by the backend).
+
+---
+
+## Design and styling
+
+The design follows a dark-fantasy theme:
+
+| Element | Value |
+|---------|-------|
+| Background | `#0D0D14` |
+| Sections | `#16161F` |
+| Gold accent | `#C9A84C` |
+| Light gold | `#E8C97A` |
+| Primary text | `#E8E0D0` |
+| Secondary text | `#8A8070` |
+| Font | system-ui, with a serif face for headings |
+
+No CSS framework is used. All styling lives in `App.css` using native CSS custom properties.
+
+---
+
+## Frontend security notes
+
+- The JWT is stored in `localStorage` and removed on logout.
+- If the token is expired or invalid, `AuthContext` detects this on startup and clears the state.
+- DM-only routes (the Users navbar link, create/edit/delete actions) are not rendered when `user.role !== 'dm'`.
+- This is a client-side convenience only. Authorization is always enforced by the backend as well.
+
+---
+
+## Demo accounts
+
+| Role | Email | Password |
+|------|-------|----------|
 | Dungeon Master | `dm@dndcompanion.com` | `dm123456` |
-| Jugador | `player@dndcompanion.com` | `player123` |
+| Player | `player@dndcompanion.com` | `player123` |
 
 ---
 
-<p align="center"><sub>✦ D&D Campaign Hub · Frontend · ACN4AP ✦</sub></p>
+## Static demo
+
+`demo.html` is a self-contained, static walkthrough of the interface intended for GitHub Pages. It does not call the backend API; it is a set of illustrative mockups of the main screens plus a short explanation of how the two repositories work together. See the comment block at the top of that file for details.
