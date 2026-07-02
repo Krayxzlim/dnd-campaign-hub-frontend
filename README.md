@@ -3,7 +3,7 @@
 Aplicación web para gestionar campañas de Dungeons & Dragons 5e.
 Hecha con React 18 y Vite. Consume la API REST del backend.
 
-**[→ Ver Informe Interactivo](https://rawcdn.githack.com/Krayxzlim/parcial-2-am-acn4a-aufieri_luciano/f79d2f0d2fe803f42525869e3c91e4df295cd807/informe_dnd_companion.html)**
+**[→ Ver Informe Interactivo](https://rawcdn.githack.com/Krayxzlim/dnd-campaign-hub-frontend/2f3e7056692093427c49943306c722ba3e401276/demo.html)**
 
 ---
 
