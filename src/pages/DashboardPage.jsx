@@ -73,11 +73,11 @@ export default function DashboardPage({ navigate }) {
             </strong>
           </p>
         </div>
-        {user.role === "dm" && (
+        {
           <button className="btn-primary" onClick={() => setShowCreate(true)}>
             ＋ Nueva Campaña
           </button>
-        )}
+        }
       </div>
 
       {error && <div className="alert-error">{error}</div>}
@@ -157,15 +157,13 @@ export default function DashboardPage({ navigate }) {
         <div className="empty-state">
           <div className="empty-icon">🗺️</div>
           <p>
-            {user.role === "dm"
-              ? "Aún no creaste ninguna campaña."
-              : "No pertenecés a ninguna campaña todavía."}
+            Todavía no tenés campañas. Creá una o pedile a tu DM que te agregue.
           </p>
-          {user.role === "dm" && (
+          {
             <button className="btn-primary" onClick={() => setShowCreate(true)}>
               Crear mi primera campaña
             </button>
-          )}
+          }
         </div>
       ) : (
         <div className="campaigns-grid">
@@ -192,7 +190,7 @@ export default function DashboardPage({ navigate }) {
                 <span>👥 {c.playerCount} jugadores</span>
                 <span>📜 {c.missionCount} misiones</span>
               </div>
-              {user.role === "dm" && (
+              {c.dmId === user.id && (
                 <div className="campaign-actions">
                   <button
                     className="btn-danger-sm"

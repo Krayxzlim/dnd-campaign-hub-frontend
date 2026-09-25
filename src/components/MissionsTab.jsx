@@ -17,6 +17,7 @@ const STATUS = {
 
 export default function MissionsTab({ campaignId, campaign }) {
   const { user } = useAuth();
+  const isDm = campaign.dmId === user.id;
   const [missions, setMissions] = useState([]);
   const [players, setPlayers] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -25,6 +26,8 @@ export default function MissionsTab({ campaignId, campaign }) {
     title: "",
     description: "",
     reward: "",
+    rewardXp: 0,
+    rewardGold: 0,
     difficulty: "medium",
   });
   const [error, setError] = useState("");
@@ -38,7 +41,7 @@ export default function MissionsTab({ campaignId, campaign }) {
     try {
       const [m, p] = await Promise.all([
         api.getMissions(campaignId),
-        user.role === "dm" ? api.getPlayers() : Promise.resolve([]),
+        Promise.resolve(campaign.players || []),
       ]);
       setMissions(m);
       setPlayers(p);
@@ -54,7 +57,14 @@ export default function MissionsTab({ campaignId, campaign }) {
     try {
       await api.createMission({ ...form, campaignId });
       setShowCreate(false);
-      setForm({ title: "", description: "", reward: "", difficulty: "medium" });
+      setForm({
+        title: "",
+        description: "",
+        reward: "",
+        rewardXp: 0,
+        rewardGold: 0,
+        difficulty: "medium",
+      });
       load();
     } catch (e) {
       setError(e.message);
@@ -65,6 +75,15 @@ export default function MissionsTab({ campaignId, campaign }) {
     try {
       await api.assignMission(missionId, playerId);
       load();
+    } catch (e) {
+      setError(e.message);
+    }
+  };
+
+  const accept = async (id) => {
+    try {
+      await api.acceptMission(id);
+      await load();
     } catch (e) {
       setError(e.message);
     }
@@ -102,7 +121,7 @@ export default function MissionsTab({ campaignId, campaign }) {
 
       <div className="section-header">
         <h2 className="section-title">📜 Misiones</h2>
-        {user.role === "dm" && (
+        {isDm && (
           <button className="btn-primary" onClick={() => setShowCreate(true)}>
             ＋ Nueva Misión
           </button>
@@ -154,6 +173,31 @@ export default function MissionsTab({ campaignId, campaign }) {
                   value={form.reward}
                   onChange={(e) =>
                     setForm((p) => ({ ...p, reward: e.target.value }))
+                  }
+                />
+              </div>
+              <div className="form-group">
+                <label className="form-label">XP</label>
+                <input
+                  className="form-input"
+                  type="number"
+                  min="0"
+                  value={form.rewardXp}
+                  onChange={(e) =>
+                    setForm((p) => ({ ...p, rewardXp: Number(e.target.value) }))
+                  }
+                />
+                <label className="form-label">ORO</label>
+                <input
+                  className="form-input"
+                  type="number"
+                  min="0"
+                  value={form.rewardGold}
+                  onChange={(e) =>
+                    setForm((p) => ({
+                      ...p,
+                      rewardGold: Number(e.target.value),
+                    }))
                   }
                 />
               </div>
@@ -219,7 +263,7 @@ export default function MissionsTab({ campaignId, campaign }) {
                     {DIFFICULTY[m.difficulty]?.label || m.difficulty}
                   </span>
                 </div>
-                {user.role === "dm" && (
+                {isDm && (
                   <div className="mission-dm-actions">
                     {m.status !== "completed" && (
                       <button
@@ -239,9 +283,25 @@ export default function MissionsTab({ campaignId, campaign }) {
                 )}
               </div>
 
+              {!isDm &&
+                m.status !== "completed" &&
+                m.assignedTo.includes(user.id) &&
+                !m.acceptedBy.includes(user.id) && (
+                  <button className="btn-primary" onClick={() => accept(m.id)}>
+                    Aceptar misión
+                  </button>
+                )}
+              {m.acceptedBy?.length > 0 && (
+                <p>
+                  Aceptada por: {m.acceptedBy.map(getPlayerName).join(", ")}
+                </p>
+              )}
               <h3 className="mission-title">{m.title}</h3>
               <p className="mission-desc">{m.description}</p>
 
+              <p>
+                {m.rewardXp} XP · {m.rewardGold} PO
+              </p>
               {m.reward && (
                 <div className="mission-reward">
                   <span className="reward-icon">💰</span>
@@ -260,26 +320,26 @@ export default function MissionsTab({ campaignId, campaign }) {
                 </div>
               )}
 
-              {user.role === "dm" &&
-                m.status === "available" &&
-                players.length > 0 && (
-                  <div className="assign-section">
-                    <select
-                      className="form-input form-input-sm"
-                      onChange={(e) =>
-                        e.target.value && assign(m.id, e.target.value)
-                      }
-                      defaultValue=""
-                    >
-                      <option value="">Asignar a jugador...</option>
-                      {players.map((p) => (
+              {isDm && m.status !== "completed" && players.length > 0 && (
+                <div className="assign-section">
+                  <select
+                    className="form-input form-input-sm"
+                    onChange={(e) =>
+                      e.target.value && assign(m.id, e.target.value)
+                    }
+                    defaultValue=""
+                  >
+                    <option value="">Asignar a jugador...</option>
+                    {players
+                      .filter((p) => !m.assignedTo.includes(p.id))
+                      .map((p) => (
                         <option key={p.id} value={p.id}>
                           {p.avatar} {p.username}
                         </option>
                       ))}
-                    </select>
-                  </div>
-                )}
+                  </select>
+                </div>
+              )}
             </div>
           ))}
         </div>

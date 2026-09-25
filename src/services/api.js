@@ -1,31 +1,36 @@
-const BASE = "http://localhost:3001/api";
-
-function getToken() {
-  return localStorage.getItem("dnd_token");
-}
+import { supabase, configurationError } from "./supabase";
+const BASE = (
+  import.meta.env.VITE_API_URL || "http://localhost:3001/api"
+).replace(/\/$/, "");
 
 async function request(method, path, body) {
-  const token = getToken();
-  const headers = { "Content-Type": "application/json" };
-  if (token) headers["Authorization"] = `Bearer ${token}`;
-
+  if (!supabase) throw new Error(configurationError);
+  const {
+    data: { session },
+    error,
+  } = await supabase.auth.getSession();
+  if (error) throw error;
+  if (!session) throw new Error("Iniciá sesión para continuar.");
+  const headers = {
+    "Content-Type": "application/json",
+    Authorization: `Bearer ${session.access_token}`,
+  };
   const res = await fetch(`${BASE}${path}`, {
     method,
     headers,
-    body: body ? JSON.stringify(body) : undefined,
+    body: body === undefined ? undefined : JSON.stringify(body),
   });
-
-  const data = await res.json();
-  if (!res.ok) throw new Error(data.error || "Error en la solicitud");
+  const data = res.status === 204 ? null : await res.json().catch(() => null);
+  if (!res.ok) {
+    const error = new Error(data?.error || `Error HTTP ${res.status}`);
+    error.status = res.status;
+    throw error;
+  }
   return data;
 }
 
 export const api = {
   // Auth
-  login: (email, password) =>
-    request("POST", "/auth/login", { email, password }),
-  register: (username, email, password, role) =>
-    request("POST", "/auth/register", { username, email, password, role }),
   me: () => request("GET", "/auth/me"),
 
   // campañas
@@ -47,6 +52,7 @@ export const api = {
   deleteMission: (id) => request("DELETE", `/missions/${id}`),
   assignMission: (id, playerId) =>
     request("POST", `/missions/${id}/assign`, { playerId }),
+  acceptMission: (id) => request("POST", `/missions/${id}/accept`),
   completeMission: (id) => request("POST", `/missions/${id}/complete`),
 
   // encuentros
@@ -86,6 +92,11 @@ export const api = {
 
   // usuarios
   getUsers: () => request("GET", "/users"),
-  getPlayers: () => request("GET", "/users/players"),
-  deleteUser: (id) => request("DELETE", `/users/${id}`),
+  getPlayers: (email) =>
+    request("GET", `/users/players?email=${encodeURIComponent(email)}`),
+  getCharacters: (campaignId) =>
+    request(
+      "GET",
+      `/characters${campaignId ? `?campaignId=${campaignId}` : ""}`,
+    ),
 };

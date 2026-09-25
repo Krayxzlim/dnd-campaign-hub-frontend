@@ -4,8 +4,9 @@ import { useAuth } from "../context/AuthContext";
 import MonsterSearch from "./MonsterSearch";
 import MonsterDetailModal from "./MonsterDetailModal";
 
-export default function EncountersTab({ campaignId }) {
+export default function EncountersTab({ campaignId, campaign }) {
   const { user } = useAuth();
+  const isDm = campaign.dmId === user.id;
   const [encounters, setEncounters] = useState([]);
   const [active, setActive] = useState(null); // seguimiento
   const [showCreate, setShowCreate] = useState(false);
@@ -187,7 +188,7 @@ export default function EncountersTab({ campaignId }) {
       {error && <div className="alert-error">{error}</div>}
 
       {/* Modal de ficha de monstruo: solo el DM puede inspeccionar */}
-      {user.role === "dm" && inspectSlug && (
+      {isDm && inspectSlug && (
         <MonsterDetailModal
           slug={inspectSlug}
           onClose={() => setInspectSlug(null)}
@@ -202,7 +203,7 @@ export default function EncountersTab({ campaignId }) {
               <h2 className="tracker-title">⚔️ {active.name}</h2>
               <span className="tracker-round">Ronda {active.round}</span>
             </div>
-            {user.role === "dm" && (
+            {isDm && (
               <div className="tracker-controls">
                 <button className="btn-secondary" onClick={nextRound}>
                   Siguiente Ronda →
@@ -229,7 +230,7 @@ export default function EncountersTab({ campaignId }) {
                 >
                   <span className="init-pos">#{i + 1}</span>
                   <span className="init-initiative">🎲 {entry.initiative}</span>
-                  {user.role === "dm" ? (
+                  {isDm ? (
                     <button
                       type="button"
                       className="init-name init-name-link"
@@ -253,7 +254,7 @@ export default function EncountersTab({ campaignId }) {
                       {entry.hp}/{entry.maxHp} PG
                     </span>
                   </div>
-                  {user.role === "dm" && entry.hp > 0 && (
+                  {isDm && entry.hp > 0 && (
                     <div className="dmg-input-group">
                       <input
                         type="number"
@@ -291,7 +292,7 @@ export default function EncountersTab({ campaignId }) {
 
       <div className="section-header">
         <h2 className="section-title">⚔️ Encuentros de Combate</h2>
-        {user.role === "dm" && !showCreate && (
+        {isDm && !showCreate && (
           <button className="btn-primary" onClick={() => setShowCreate(true)}>
             ＋ Nuevo Encuentro
           </button>
@@ -299,7 +300,7 @@ export default function EncountersTab({ campaignId }) {
       </div>
 
       {/* form de encuentros */}
-      {showCreate && user.role === "dm" && (
+      {showCreate && isDm && (
         <div className="encounter-builder">
           <div className="builder-header">
             <h3>⚔️ Constructor de Encuentro</h3>
@@ -433,7 +434,7 @@ export default function EncountersTab({ campaignId }) {
 
               <div className="monster-summary">
                 {enc.monsters.map((m, i) =>
-                  user.role === "dm" ? (
+                  isDm ? (
                     <button
                       type="button"
                       key={i}
@@ -462,7 +463,7 @@ export default function EncountersTab({ campaignId }) {
                     ⚔️ Ver Combate
                   </button>
                 )}
-                {enc.status === "pending" && user.role === "dm" && (
+                {enc.status === "pending" && isDm && (
                   <button
                     className="btn-primary"
                     onClick={() => startCombat(enc.id)}
@@ -470,7 +471,7 @@ export default function EncountersTab({ campaignId }) {
                     🎲 Iniciar Combate
                   </button>
                 )}
-                {user.role === "dm" && (
+                {isDm && (
                   <button
                     className="btn-danger-sm"
                     onClick={(e) => deleteEncounter(enc.id, e)}

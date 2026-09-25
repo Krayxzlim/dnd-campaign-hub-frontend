@@ -1,31 +1,52 @@
-import { useState, useEffect } from 'react';
-import { api } from '../services/api';
-import { useAuth } from '../context/AuthContext';
+import { useState, useEffect } from "react";
+import { api } from "../services/api";
+import { useAuth } from "../context/AuthContext";
 
 export default function PlayersTab({ campaign, onUpdate }) {
   const { user } = useAuth();
+  const isDm = campaign.dmId === user.id;
   const [allPlayers, setAllPlayers] = useState([]);
-  const [error, setError] = useState('');
+  const [error, setError] = useState("");
 
-  useEffect(() => {
-    if (user.role === 'dm') {
-      api.getPlayers().then(setAllPlayers).catch(e => setError(e.message));
+  const [email, setEmail] = useState("");
+  const search = async (e) => {
+    e.preventDefault();
+    setError("");
+    try {
+      const players = await api.getPlayers(email.trim());
+      setAllPlayers(players);
+      if (!players.length)
+        setError(
+          "No encontramos ese usuario. Debe registrarse e iniciar sesión primero.",
+        );
+    } catch (e) {
+      setError(e.message);
     }
-  }, []);
+  };
 
   const addPlayer = async (playerId) => {
-    try { await api.addPlayer(campaign.id, playerId); onUpdate(); }
-    catch(e) { setError(e.message); }
+    try {
+      await api.addPlayer(campaign.id, playerId);
+      onUpdate();
+    } catch (e) {
+      setError(e.message);
+    }
   };
 
   const removePlayer = async (playerId) => {
-    if (!confirm('¿Remover al jugador de la campaña?')) return;
-    try { await api.removePlayer(campaign.id, playerId); onUpdate(); }
-    catch(e) { setError(e.message); }
+    if (!confirm("¿Remover al jugador de la campaña?")) return;
+    try {
+      await api.removePlayer(campaign.id, playerId);
+      onUpdate();
+    } catch (e) {
+      setError(e.message);
+    }
   };
 
-  const campaignPlayerIds = (campaign.players || []).map(p => p.id);
-  const availablePlayers = allPlayers.filter(p => !campaignPlayerIds.includes(p.id));
+  const campaignPlayerIds = (campaign.players || []).map((p) => p.id);
+  const availablePlayers = allPlayers.filter(
+    (p) => !campaignPlayerIds.includes(p.id),
+  );
 
   return (
     <div>
@@ -35,16 +56,34 @@ export default function PlayersTab({ campaign, onUpdate }) {
         <h2 className="section-title">👥 Jugadores en la Campaña</h2>
       </div>
 
+      {isDm && (
+        <form onSubmit={search} className="add-player-section">
+          <label>Agregar por correo electrónico</label>
+          <input
+            className="form-input"
+            type="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            required
+          />
+          <button className="btn-primary" type="submit">
+            Buscar jugador
+          </button>
+        </form>
+      )}
       <div className="players-grid">
-        {(campaign.players || []).map(p => (
+        {(campaign.players || []).map((p) => (
           <div key={p.id} className="player-card">
             <div className="player-avatar">{p.avatar}</div>
             <div className="player-info">
               <div className="player-name">{p.username}</div>
               <div className="player-email">{p.email}</div>
             </div>
-            {user.role === 'dm' && (
-              <button className="btn-danger-sm" onClick={() => removePlayer(p.id)}>
+            {isDm && (
+              <button
+                className="btn-danger-sm"
+                onClick={() => removePlayer(p.id)}
+              >
                 Remover
               </button>
             )}
@@ -58,18 +97,21 @@ export default function PlayersTab({ campaign, onUpdate }) {
         )}
       </div>
 
-      {user.role === 'dm' && availablePlayers.length > 0 && (
+      {isDm && availablePlayers.length > 0 && (
         <div className="add-player-section">
           <h3 className="section-title">＋ Agregar Jugadores</h3>
           <div className="players-grid">
-            {availablePlayers.map(p => (
+            {availablePlayers.map((p) => (
               <div key={p.id} className="player-card player-card-add">
                 <div className="player-avatar">{p.avatar}</div>
                 <div className="player-info">
                   <div className="player-name">{p.username}</div>
                   <div className="player-email">{p.email}</div>
                 </div>
-                <button className="btn-primary btn-sm" onClick={() => addPlayer(p.id)}>
+                <button
+                  className="btn-primary btn-sm"
+                  onClick={() => addPlayer(p.id)}
+                >
                   Agregar
                 </button>
               </div>
