@@ -4,17 +4,19 @@ Web para dirigir campañas, participantes, misiones y encuentros. Comparte Supab
 
 ## Ejecutar
 
-Requisitos: Node 22+ y el backend de la rama `feat/supabase-prisma-integration` configurado.
+Requisitos: Node 22+ y el backend configurado con su conexión PostgreSQL.
 
 ```sh
 npm ci
-cp .env.example .env.local
-# Completar las tres variables de .env.local
 npm run dev
 ```
 
-- `VITE_API_URL`: URL de Express terminada en `/api`.
-- `VITE_SUPABASE_URL`: URL del mismo proyecto usado por el backend y Android.
+La URL y clave pública del proyecto ya están en `config/supabase.public.json`; no hace falta `.env.local` para usar este proyecto. Reiniciar Vite después de actualizar. Si ya existe un archivo con valores de ejemplo, quitarlos o reemplazarlos con `.env.example`.
+
+Para sobrescribir la configuración, crear `.env.local` desde `.env.example` (PowerShell: `Copy-Item .env.example .env.local`):
+
+- `VITE_API_URL`: URL de Express terminada en `/api`; por defecto `http://localhost:3001/api`.
+- `VITE_SUPABASE_URL`: URL del mismo proyecto usado por el backend y Android. Sobrescribir siempre junto con la clave pública.
 - `VITE_SUPABASE_PUBLISHABLE_KEY`: clave pública. Nunca usar la clave secreta, `service_role` o una conexión PostgreSQL en variables VITE.
 
 Agregar el origen de Vite a `CORS_ORIGINS` del backend. En Supabase Auth configurar Site URL y Redirect URLs para la web; habilitar email/password. Si se exige confirmación de email, el formulario indica que se debe confirmar antes del login.
