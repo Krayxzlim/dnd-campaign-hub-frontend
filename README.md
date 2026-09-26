@@ -49,3 +49,17 @@ npm run build
 ```
 
 El contrato completo y la migración Prisma se mantienen en el [backend](https://github.com/Krayxzlim/dnd-campaign-hub-backend/tree/feat/supabase-prisma-integration/docs/integration.md). No se despliegan servicios con este cambio.
+
+## Recuperación de contraseña
+
+En el login, **Olvidé mi contraseña** solicita el correo sin requerir contraseña. El enlace abre `/?recovery=1`, donde el usuario escribe y confirma una nueva contraseña de al menos 8 caracteres. La pantalla valida la sesión con Supabase, informa enlaces inválidos/vencidos y permite solicitar otro. No necesita Express para completar el cambio. Tras guardar se solicita el cierre global de sesiones y se vuelve a ingresar con la nueva contraseña; los access tokens ya emitidos pueden seguir vigentes hasta expirar.
+
+En **Supabase → Authentication → URL Configuration**, agregar a **Redirect URLs** las direcciones exactas usadas:
+
+- `http://localhost:5173/?recovery=1` para abrir el correo en la computadora de desarrollo.
+- `http://127.0.0.1:5173/?recovery=1` si se usa ese host.
+- La dirección HTTPS real de la web con `/?recovery=1` para producción y celulares físicos.
+
+La web usa su propio origen para el enlace. Configurar también Site URL con la web correcta; no dejar `localhost:3000` si Vite corre en 5173. Las plantillas de correo deben conservar `{{ .ConfirmationURL }}` (plantilla predeterminada de Supabase). El flujo usa enlaces de recuperación estándar; no cambia la contraseña de PostgreSQL ni expone claves privadas.
+
+Comprobación: `node --test test/passwordRecovery.test.js`, `npm run build` y `npm run lint`. Para la aceptación real, solicitar el enlace con una cuenta propia, abrirlo, verificar mismatch/vencimiento, guardar, y probar login con la nueva contraseña en web y Android. Los tests automáticos no envían correos ni modifican cuentas reales.
