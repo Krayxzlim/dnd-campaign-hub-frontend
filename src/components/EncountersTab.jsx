@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { api } from "../services/api";
 import { useAuth } from "../context/AuthContext";
+import InitiativeSetup from "./InitiativeSetup";
 import MonsterSearch from "./MonsterSearch";
 import MonsterDetailModal from "./MonsterDetailModal";
 
@@ -14,6 +15,7 @@ export default function EncountersTab({ campaignId, campaign }) {
   const [form, setForm] = useState({ name: "", description: "", monsters: [] });
   const [dmgInputs, setDmgInputs] = useState({});
   const [error, setError] = useState("");
+  const [preparing, setPreparing] = useState(null);
   const [inspectSlug, setInspectSlug] = useState(null);
 
   useEffect(() => {
@@ -99,13 +101,16 @@ export default function EncountersTab({ campaignId, campaign }) {
     });
   };
 
-  const startCombat = async (id) => {
+  // Inicia el encuentro con los jugadores confirmados y muestra el orden guardado.
+  const startCombat = async (id, players) => {
     try {
-      const enc = await api.startEncounter(id);
+      const enc = await api.startEncounter(id, players);
       setActive(enc);
+      setPreparing(null);
       load();
     } catch (err) {
       setError(err.message);
+      throw err;
     }
   };
 
@@ -195,6 +200,7 @@ export default function EncountersTab({ campaignId, campaign }) {
         />
       )}
 
+      {preparing && isDm && <InitiativeSetup key={preparing.id} encounter={preparing} onClose={()=>setPreparing(null)} onStart={players=>startCombat(preparing.id,players)}/>}
       {/* seguimiento de compbates activos */}
       {active && (
         <div className="combat-tracker">
@@ -225,12 +231,12 @@ export default function EncountersTab({ campaignId, campaign }) {
               const key = `${entry.monsterId}-${entry.instanceIndex}`;
               return (
                 <div
-                  key={i}
-                  className={`initiative-row ${entry.hp <= 0 ? "dead" : ""}`}
+                  key={entry.id || i}
+                  className={`initiative-row ${!entry.isPlayer && entry.hp <= 0 ? "dead" : ""}`}
                 >
                   <span className="init-pos">#{i + 1}</span>
                   <span className="init-initiative">🎲 {entry.initiative}</span>
-                  {isDm ? (
+                  {isDm && !entry.isPlayer ? (
                     <button
                       type="button"
                       className="init-name init-name-link"
@@ -242,8 +248,8 @@ export default function EncountersTab({ campaignId, campaign }) {
                   ) : (
                     <span className="init-name">{entry.name}</span>
                   )}
-                  <span className="init-ac">🛡 {entry.ac}</span>
-                  <div className="init-hp-bar-wrap">
+                  {!entry.isPlayer && <span className="init-ac">🛡 {entry.ac}</span>}
+                  {!entry.isPlayer && <div className="init-hp-bar-wrap">
                     <div className="init-hp-bar">
                       <div
                         className="init-hp-fill"
@@ -253,8 +259,9 @@ export default function EncountersTab({ campaignId, campaign }) {
                     <span className="init-hp-text">
                       {entry.hp}/{entry.maxHp} PG
                     </span>
-                  </div>
-                  {isDm && entry.hp > 0 && (
+                  </div>}
+                  {entry.isPlayer && <span>Jugador · {entry.roll} {entry.modifier>=0?"+":""}{entry.modifier}</span>}
+                  {isDm && !entry.isPlayer && entry.hp > 0 && (
                     <div className="dmg-input-group">
                       <input
                         type="number"
@@ -280,7 +287,7 @@ export default function EncountersTab({ campaignId, campaign }) {
                       </button>
                     </div>
                   )}
-                  {entry.hp <= 0 && (
+                  {!entry.isPlayer && entry.hp <= 0 && (
                     <span className="dead-label">💀 Caído</span>
                   )}
                 </div>
@@ -466,7 +473,7 @@ export default function EncountersTab({ campaignId, campaign }) {
                 {enc.status === "pending" && isDm && (
                   <button
                     className="btn-primary"
-                    onClick={() => startCombat(enc.id)}
+                    onClick={() => setPreparing(enc)}
                   >
                     🎲 Iniciar Combate
                   </button>

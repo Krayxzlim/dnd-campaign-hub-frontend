@@ -64,7 +64,17 @@ export const api = {
   getEncounter: (id) => request("GET", `/encounters/${id}`),
   createEncounter: (data) => request("POST", "/encounters", data),
   updateEncounter: (id, data) => request("PUT", `/encounters/${id}`, data),
-  startEncounter: (id) => request("POST", `/encounters/${id}/start`),
+  // Verifica que el backend admita jugadores antes de iniciar el encuentro.
+  startEncounter: async (id, players = []) => {
+    if (players.length) {
+      const capability = await request("GET", `/encounters/${id}/initiative-capabilities`).catch(error => {
+        if (error.status === 404) throw new Error("No se pudo verificar soporte de iniciativas: actualizá el backend y comprobá tu acceso al encuentro.");
+        throw error;
+      });
+      if (!capability?.playerInitiatives) throw new Error("El backend necesita la actualización de iniciativas antes de iniciar este encuentro.");
+    }
+    return request("POST", `/encounters/${id}/start`, { players });
+  },
   applyDamage: (id, data) => request("PATCH", `/encounters/${id}/damage`, data),
   nextRound: (id) => request("POST", `/encounters/${id}/nextround`),
   endEncounter: (id) => request("POST", `/encounters/${id}/end`),

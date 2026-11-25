@@ -1,4 +1,6 @@
 import { useState } from "react";
+import { supabase, configurationError } from "../services/supabase";
+import { recoveryUrl, requestRecovery } from "../services/passwordRecovery";
 import { useAuth } from "../context/AuthContext";
 
 export default function LoginPage() {
@@ -20,6 +22,9 @@ export default function LoginPage() {
     try {
       if (mode === "login") {
         await login(form.email, form.password);
+      } else if (mode === "recover") {
+        if (!supabase) throw new Error(configurationError);
+        setMessage(await requestRecovery(supabase.auth, form.email, recoveryUrl(window.location.origin)));
       } else {
         const result = await register(form.username, form.email, form.password);
         if (result.needsConfirmation)
@@ -65,13 +70,15 @@ export default function LoginPage() {
         <div className="login-tabs">
           <button
             className={`tab-btn ${mode === "login" ? "active" : ""}`}
-            onClick={() => setMode("login")}
+            disabled={loading}
+            onClick={() => { setMode("login"); setError(""); setMessage(""); }}
           >
             Ingresar
           </button>
           <button
             className={`tab-btn ${mode === "register" ? "active" : ""}`}
-            onClick={() => setMode("register")}
+            disabled={loading}
+            onClick={() => { setMode("register"); setError(""); setMessage(""); }}
           >
             Registrarse
           </button>
@@ -107,7 +114,7 @@ export default function LoginPage() {
             />
           </div>
 
-          <div className="form-group">
+          {mode !== "recover" && <div className="form-group">
             <label className="form-label">✦ CONTRASEÑA</label>
             <input
               className="form-input"
@@ -118,7 +125,9 @@ export default function LoginPage() {
               onChange={handle}
               required
             />
-          </div>
+          </div>}
+
+          {mode === "recover" && <p>Te enviaremos un enlace para elegir una contraseña nueva.</p>}
 
           {(error || sessionError) && (
             <div className="form-error">⚠️ {error || sessionError}</div>
@@ -130,9 +139,10 @@ export default function LoginPage() {
               ? "Cargando..."
               : mode === "login"
                 ? "⚔️ INGRESAR AL REINO"
-                : "✦ CREAR CUENTA"}
+                : mode === "recover" ? "ENVIAR ENLACE" : "✦ CREAR CUENTA"}
           </button>
         </form>
+        <button className="tab-btn" disabled={loading} onClick={() => { setMode("recover"); setError(""); setMessage(""); }}>Olvidé mi contraseña</button>
       </div>
     </div>
   );

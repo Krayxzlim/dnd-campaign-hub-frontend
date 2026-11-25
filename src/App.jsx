@@ -5,6 +5,15 @@ import DashboardPage from "./pages/DashboardPage";
 import CampaignPage from "./pages/CampaignPage";
 import UsersPage from "./pages/UsersPage";
 import "./App.css";
+import PasswordRecoveryPage from "./pages/PasswordRecoveryPage";
+import { recoveryEntry } from "./services/passwordRecovery";
+
+const recovery = recoveryEntry(window.location.href);
+if (recovery.active) {
+  const url = new URL(window.location.href);
+  url.searchParams.set("recovery", "1");
+  window.history.replaceState(null, "", url);
+}
 
 function AppContent() {
   const { user, loading, error, logout } = useAuth();
@@ -71,6 +80,8 @@ function AppContent() {
 }
 
 export default function App() {
+  // Recovery must stay outside AuthProvider: it must not require Express or navigate to the dashboard.
+  if (recovery.active) return <PasswordRecoveryPage invalidLink={recovery.invalid} />;
   return (
     <AuthProvider>
       <AppContent />
